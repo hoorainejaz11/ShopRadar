@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Modal, StyleSheet,RefreshControl,Pressable, Alert, TouchableWithoutFeedback } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
-import network from '../network';
+import { getVendor, getUpcomingVendorOrders, getOrderDetails, getProduct, updateOrder } from '../lib/api';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const VendorHome = ({ navigation }) => {
@@ -26,7 +25,7 @@ const VendorHome = ({ navigation }) => {
           setvendorId(id);
   
           try {
-            const VendorName = await axios.get(`${network.serverurl}/vendor/${id}`);
+            const VendorName = { data: await getVendor(id) };
             const vendor = VendorName.data;
             setVendorBusinessName(vendor.BusinessName);
 
@@ -54,7 +53,7 @@ const VendorHome = ({ navigation }) => {
    const fetchOrders = async (id) => {
 
     try {
-      const response = await axios.get(`${network.serverurl}/orders/upcoming/${id?id:vendorId}`);
+      const response = { data: await getUpcomingVendorOrders(id?id:vendorId) };
       const orders = response.data;
       const upcoming = orders.filter(order => !order.VanAccept && order.OrderStatus === 'pending');
       const inProgress = orders.filter(order => order.VanAccept && order.OrderStatus !== 'PickedUP' && order.OrderStatus !== 'Delivered' && order.OrderStatus !== 'Cancelled');
@@ -81,14 +80,14 @@ const VendorHome = ({ navigation }) => {
 
   const fetchProductDetails = async (orderId) => {
     try {
-      const response = await axios.get(`${network.serverurl}/orderdetails/${orderId}/details`);
+      const response = { data: await getOrderDetails(orderId) };
       const orderDetailsData = response.data;
       
       const enrichedOrderDetails = await Promise.all(orderDetailsData.map(async (detail) => {
         const products = JSON.parse(detail.ProductDetails).products;
         const enrichedProducts = await Promise.all(products.map(async (product) => {
           try {
-            const productResponse = await axios.get(`${network.serverurl}/Product/Products/${product.ProductID}`);
+            const productResponse = { data: await getProduct(product.ProductID) };
             return { ...product, ProductName: productResponse.data.ProductName };
           } catch (error) {
             console.error(`Failed to fetch product name for ProductID: ${product.ProductID}`, error);
@@ -109,7 +108,7 @@ const VendorHome = ({ navigation }) => {
     if (!selectedOrder) return; // Ensure selectedOrder is not null
 
     try {
-      await axios.put(`${network.serverurl}/orders/${selectedOrder.OrderID}`, {
+      await updateOrder(selectedOrder.OrderID, {
         VanAccept: true,
       });
       fetchOrders();

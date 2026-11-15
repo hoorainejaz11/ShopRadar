@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import axios from 'axios';
 import { themeColors } from '../theme'; // Assuming you have themeColors for consistent styling
-import network from '../network';
+import { updateCustomer, refreshStoredUser } from '../lib/api';
 
 const EditCustomer = ({ route, navigation }) => {
   const { customer } = route.params; // Fetch the customer data from route params
@@ -50,7 +49,8 @@ const EditCustomer = ({ route, navigation }) => {
       };
 
       // Send updated data to backend
-      await axios.put(`${network.serverurl}/Customer/update/${customer.CustomerID}`, updatedCustomer);
+      await updateCustomer(customer.CustomerID, updatedCustomer);
+      await refreshStoredUser();
 
       Alert.alert('Success', 'Customer updated successfully');
       navigation.goBack(); // Go back to the previous screen

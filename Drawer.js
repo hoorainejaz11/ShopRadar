@@ -12,7 +12,7 @@ import ProfileScreen from './Navigations/ViewProfile';
 const defaultAvatar = 'https://i.sstatic.net/l60Hf.png';
 import VendorRegister from './VendorScreens/VendorRegister';
 import RiderRegister from './RiderScreens/RiderRegister';
-import AdminNavigation from '../Shop-Radar/Navigations/AdminNav';
+import AdminNavigation from './Navigations/AdminNav';
 import EditRider from './EDITComponent/EditRider';
 import EditVendor from './EDITComponent/EditVendor';
 import EditCustomer from './EDITComponent/EditCustomer';

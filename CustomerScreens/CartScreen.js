@@ -6,8 +6,7 @@ import { useNavigation } from "@react-navigation/native";
 import { useDispatch, useSelector } from "react-redux";
 import { RemoveFromCart, selectCartItems, selectCartTotal, clearCart, EmptyCart } from "../slices/CartSlices";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import network from "../network";
+import { createOrder, createOrderDetails } from '../lib/api';
 import LocationSelector from '../components/LocationSelector';
 import HaversineDistance from '../components/HaversineDistance'; // Ensure the path is correct
 
@@ -133,16 +132,9 @@ export default function CartScreen() {
         };
   
         try {
-            const orderResponse = await fetch(network.serverurl + "/orders/", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(order),
-            });
-            const orderData = await orderResponse.json();
+            const orderData = await createOrder(order);
 
-            if (orderResponse.ok) {
+            if (orderData) {
                 const orderID = orderData.OrderID;
                 const productDetails = cartItems.map(item => ({
                     ProductID: item.ProductID,
@@ -155,16 +147,9 @@ export default function CartScreen() {
                     ProductDetails: JSON.stringify({ products: productDetails })
                 };
 
-                const orderDetailResponse = await fetch(`${network.serverurl}/orderdetails/`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderDetails),
-                });
+                const orderDetailData = await createOrderDetails(orderDetails);
 
-                if (orderDetailResponse.ok) {
-                    const orderDetailData = await orderDetailResponse.json();
+                if (orderDetailData) {
                     console.log('Order details uploaded:', orderDetailData);
                     Alert.alert('Order details uploaded successfully!');
                     saveOrderID(orderDetailData.OrderID)
@@ -172,8 +157,7 @@ export default function CartScreen() {
                     navigation.navigate("OrderPreparing");
 
                 } else {
-                    const errorData = await orderDetailResponse.json();
-                    console.error('Failed to add order details:', errorData);
+                    console.error('Failed to add order details');
                     Alert.alert('Failed to add order details. Please try again.');
                 }
             }

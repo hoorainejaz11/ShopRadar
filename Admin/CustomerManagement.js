@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Modal, TextInput } from 'react-native';
-import axios from 'axios';
 import { themeColors } from '../theme'; // Assuming you have themeColors for consistent styling
-import network from '../network';
+import { getCustomersWithRoles, deleteCustomer as removeCustomer } from '../lib/api';
 
 const CustomersManagementScreen = ({ navigation }) => {
   const [customers, setCustomers] = useState([]);
@@ -15,9 +14,9 @@ const CustomersManagementScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchCustomers = async () => {
       try {
-        const response = await axios.get(network.serverurl + '/Customer/Customers/all');
-        setCustomers(response.data);
-        setFilteredCustomers(response.data); // Set initially to all customers
+        const data = await getCustomersWithRoles();
+        setCustomers(data);
+        setFilteredCustomers(data); // Set initially to all customers
       } catch (error) {
         console.error('Failed to fetch customers', error);
       }
@@ -53,7 +52,7 @@ const CustomersManagementScreen = ({ navigation }) => {
   // Delete customer function
   const deleteCustomer = async (customerID) => {
     try {
-      await axios.delete(network.serverurl + '/customers/delete/' + customerID);
+      await removeCustomer(customerID);
       setCustomers(customers.filter((customer) => customer.CustomerID !== customerID));
       closeModal();
     } catch (error) {

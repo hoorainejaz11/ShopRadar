@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Modal, Pressable, RefreshControl, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import network from '../network';
+import { getVendor, getRider, signOut } from '../lib/api';
 const ProfileScreen = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [profileData, setProfileData] = useState(null);
@@ -32,7 +31,7 @@ const ProfileScreen = ({ navigation }) => {
   const VendorData = async(userData) => {
    try{
     if(userData.VendorID){
-      const response = await axios.get(network.serverurl + "/Vendor/" + userData.VendorID);
+      const response = { data: await getVendor(userData.VendorID) };
     const Vendor = response.data;
     setVendorInfo(Vendor);
     }
@@ -45,7 +44,7 @@ const ProfileScreen = ({ navigation }) => {
   const RiderData = async (userData) =>{
     try{
       if(userData.RiderID){
-        const response = await axios.get(network.serverurl + "/Rider/" + userData.RiderID);
+        const response = { data: await getRider(userData.RiderID) };
       const Rider = response.data;
       setRiderInfo(Rider);
     
@@ -58,7 +57,7 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
+      await signOut();
       navigation.reset({
         index: 0,
         routes: [{ name: 'Login' }],

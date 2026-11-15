@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, TextInput, ScrollView, Text, Modal,Image, Button, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
 import * as Icon from 'react-native-feather';
-import axios from 'axios';
-import network from "../network";
+import { searchProducts } from '../lib/api';
 import { useNavigation } from '@react-navigation/native';
 import RNPickerSelect from 'react-native-picker-select';
 import { categories,markets } from "../constants";
@@ -19,17 +18,15 @@ export default function SearchFilterScreen() {
 
   const fetchFilteredProducts = async (text) => {
     setSearchText(text)
-    if(searchText){
+    if(text){
       
       try {
-        const response = await axios.get(`${network.serverurl}/Product/SearchProducts/`, {
-          params: {
-            searchText,
-            category: selectedCategory,
-            market: selectedMarket
-          }
+        const results = await searchProducts({
+          searchText: text,
+          category: selectedCategory,
+          market: selectedMarket
         });
-        setVendors(response.data);
+        setVendors(results);
         
       } catch (error) {
         console.log('Error fetching filtered products', error);

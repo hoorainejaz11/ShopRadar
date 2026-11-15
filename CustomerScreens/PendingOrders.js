@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, FlatList, StyleSheet,  Linking,TouchableOpacity, RefreshControl} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import network from '../network';
+import { getCustomerActiveOrders } from '../lib/api';
 import * as Icon from "react-native-feather";
 import { themeColors } from '../theme';
 
@@ -40,7 +39,7 @@ const InProgressOrders = () => {
 
   const fetchOrders = async (customerID) => {
     try {
-      const response = await axios.get(`${network.serverurl}/orders/customer/${customerId}`);
+      const response = { data: await getCustomerActiveOrders(customerId) };
       if(response.data.length  > 0){
         setOrders(response.data);
       }else{

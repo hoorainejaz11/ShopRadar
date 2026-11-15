@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Modal, FlatList, Button, Pressable, TouchableOpacity, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import network from '../network';
+import { getRiderAssignedOrder, getOrder, getAvailableRiderOrders, acceptOrder } from '../lib/api';
 import { Ionicons } from '@expo/vector-icons';
-import axios from 'axios';
 
 export default function RiderHome() {
   const navigation = useNavigation();
@@ -42,13 +41,13 @@ export default function RiderHome() {
 
     try {
       // First, fetch the assigned order
-      const assignedOrderResponse = await axios.get(`${network.serverurl}/Rider/assigned-order/${RiderID.RiderID}`);
+      const assignedOrderResponse = { data: await getRiderAssignedOrder(RiderID.RiderID) };
       
       if (assignedOrderResponse.data.AssignedOrder) {
         setAssOrder(assignedOrderResponse.data);
 
         // Now fetch the order details using the AssignedOrder
-        const orderResponse = await axios.get(`${network.serverurl}/orders/${assignedOrderResponse.data.AssignedOrder}`);
+        const orderResponse = { data: await getOrder(assignedOrderResponse.data.AssignedOrder) };
         const orderData = orderResponse.data;
         setPreviousOrder(orderData);
 
@@ -81,8 +80,7 @@ export default function RiderHome() {
     setIsLoading(true); // Set loading to true before fetching
 
     try {
-      const response = await fetch(`${network.serverurl}/orders/all`);
-      const data = await response.json();
+      const data = await getAvailableRiderOrders();
 
       if (data.length > 0) {
         setOrders(data.sort((a, b) => b.OrderID - a.OrderID));
@@ -103,21 +101,13 @@ export default function RiderHome() {
 
   const handleAccept = async (OrderID) => {
     try {
-      await fetch(`${network.serverurl}/orders/${OrderID}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ OrderStatus: 'accepted', RiderID: RiderID.RiderID }),
-      });
-
-      await fetch(`${network.serverurl}/Rider/Update/${RiderID.RiderID}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ AssignedOrder: OrderID, IsAvailable: false }),
-      });
+      await acceptOrder(OrderID, RiderID.RiderID);
 
       navigation.navigate('RiderVanNav', { OrderID });
     } catch (error) {
       console.error('Error accepting order:', error);
+      alert(error?.message || 'Could not accept order');
+      fetchOrders();
     }
   };
 

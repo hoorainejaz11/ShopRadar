@@ -8,8 +8,7 @@ import CartIcon from "../CustomerComponent/cartIcon";
 import { StatusBar } from "expo-status-bar";
 import { useDispatch } from "react-redux";
 import { setShop } from "../slices/ShopSlices";
-import axios from 'axios';
-import network from "../network";
+import { getProductsByVendor, getProduct, getVendor } from '../lib/api';
 
 export default function ShopScreen() {
   const navigation = useNavigation();
@@ -51,7 +50,7 @@ export default function ShopScreen() {
   const FetchallProducts = (ID) =>{
     
     try{
-        axios.get(network.serverurl+"/Product/"+ID)
+        getProductsByVendor(ID).then(data => ({ data }))
           .then(response => {
             setProducts(response.data);
           })
@@ -66,7 +65,7 @@ export default function ShopScreen() {
 
   const FetchSelectedProduct = (ID) => {
     try{
-      axios.get(network.serverurl+"/Product/Products/"+ID)
+      getProduct(ID).then(data => ({ data }))
         .then(response => {
           console.log('selectedProduct',response.data)
           setSelectedProduct(response.data);
@@ -81,7 +80,7 @@ export default function ShopScreen() {
   }
   const VendorDetail = () => {
     // Fetch Vendor
-    axios.get(network.serverurl+"/vendor/"+item.vendor.VendorID)
+    getVendor(item.vendor.VendorID).then(data => ({ data }))
     .then(response => {
       dispatch(setShop( response.data ));
      setVendor(response.data)

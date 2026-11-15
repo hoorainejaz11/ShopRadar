@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from 'react-native';
-import axios from 'axios';
 import moment from 'moment';
-import network from '../network';
+import { getVendorIncome } from '../lib/api';
 import { themeColors } from '../theme';
 import * as Icon from "react-native-feather"; // Import Feather icons
 import { useNavigation } from '@react-navigation/native';
@@ -36,7 +35,7 @@ const VendorIncomeScreen = () => {
   if (props){
       try {
         
-        const response = await axios.get(network.serverurl + '/orders/VendorIncome/'+ props); // Adjust endpoint as needed
+        const response = { data: await getVendorIncome(props) }; // Adjust endpoint as needed
         setIncomeData(response.data);
       } catch (error) {
         console.error(error);

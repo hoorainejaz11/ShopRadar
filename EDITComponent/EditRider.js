@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import axios from 'axios';
 import { themeColors } from '../theme'; // Assuming you have themeColors for consistent styling
-import network from '../network';
+import { getRider, updateRider } from '../lib/api';
 
 const EditRider = ({ route, navigation }) => {
   const { RiderID } = route.params; // Get RiderID from params
@@ -23,7 +22,7 @@ const EditRider = ({ route, navigation }) => {
   useEffect(() => {
     const fetchRiderDetails = async () => {
       try {
-        const response = await axios.get(`${network.serverurl}/Rider/${RiderID}`);
+        const response = { data: await getRider(RiderID) };
         const riderData = response.data;
         setRider(riderData);
         setFormData({
@@ -54,7 +53,7 @@ const EditRider = ({ route, navigation }) => {
   // Save updated rider details
   const saveRiderDetails = async () => {
     try {
-      await axios.put(`${network.serverurl}/Rider/update/${RiderID}`, formData);
+      await updateRider(RiderID, formData);
       Alert.alert('Success', 'Rider details updated successfully');
       navigation.goBack(); // Go back after saving
     } catch (error) {

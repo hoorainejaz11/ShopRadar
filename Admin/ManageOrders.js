@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput } from 'react-native';
 import Modal from 'react-native-modal';
-import axios from 'axios';
 import { themeColors } from '../theme';
-import network from '../network';
+import { getAllOrders, getOrderDetails, updateOrder, updateOrderDetail } from '../lib/api';
 const ManageOrdersScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -15,8 +14,8 @@ const ManageOrdersScreen = ({ navigation }) => {
   useEffect(() => {
     const fetchOrders = async () => {
       try {
-        const response = await axios.get(network.serverurl+'/orders/admin/allOrders');
-        const filteredOrders = response.data.filter(
+        const allOrders = await getAllOrders();
+        const filteredOrders = allOrders.filter(
           order => order.OrderStatus !== 'Delivered' && order.OrderStatus !== 'Cancelled'
         );
         setOrders(filteredOrders);
@@ -30,11 +29,10 @@ const ManageOrdersScreen = ({ navigation }) => {
 
   const openModal = async (order) => {
     try {
-      const response = await axios.get(`${network.serverurl}/orderdetails/${order.OrderID}/details`);
-      console.log('Response Data:', response.data);
+      const details = await getOrderDetails(order.OrderID);
       
       // Parse the product details and map the OrderDetailID
-      const productDetailsWithIDs = response.data.map(detail => {
+      const productDetailsWithIDs = details.map(detail => {
         const parsedProducts = JSON.parse(detail.ProductDetails).products;
         return parsedProducts.map(product => ({
           ...product,
@@ -78,14 +76,12 @@ const cancelOrder = async () => {
   let CancelOrderID = selectedOrder.OrderID
   console.log('this is cancellation Order iD',CancelOrderID)
   try {
-    const response = await axios.put(`${network.serverurl}/orders/${CancelOrderID}`, {
+    await updateOrder(CancelOrderID, {
       OrderStatus: 'Cancelled',
       isDelivered: false,
     });
-    if(response.data){
-      console.log('response data of markder deliver ', response.data)
-      setModalVisible(false)
-    }
+    setOrders(prev => prev.filter(o => o.OrderID !== CancelOrderID));
+    setModalVisible(false)
   } catch (error) {
     console.error('Failed to update order status:', error);
   }
@@ -99,7 +95,8 @@ const cancelOrder = async () => {
 
   const saveChanges = async () => {
     try {
-      const productsToUpdate = orderDetails.map(detail => (setselectedOrderDetailID(detail.OrderDetailID),{
+      const detailID = orderDetails[0]?.OrderDetailID;
+      const productsToUpdate = orderDetails.map(detail => ({
         ProductID: detail.ProductID,
         Quantity: detail.Quantity,
         Price: detail.Price,
@@ -107,16 +104,14 @@ const cancelOrder = async () => {
   
       console.log('Saving changes with data:', JSON.stringify({ products: productsToUpdate }));
   
-     if(productsToUpdate){
-      const updateResponse = await axios.put(`${network.serverurl}/orderdetails/update/${selectedOrderDetailID}`, {
+     if(detailID){
+      await updateOrderDetail(detailID, {
         ProductDetails: JSON.stringify({ products: productsToUpdate }),
       });
-  
-      console.log('Update Response:', updateResponse.data);
       closeModal();
   
-      const response = await axios.get(network.serverurl+'/orders/admin/allOrders');
-      const filteredOrders = response.data.filter(
+      const allOrders = await getAllOrders();
+      const filteredOrders = allOrders.filter(
         (order) => order.OrderStatus !== 'Delivered' && order.OrderStatus !== 'Cancelled'
       );
       setOrders(filteredOrders);

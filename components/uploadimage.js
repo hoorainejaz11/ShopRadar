@@ -1,36 +1,17 @@
-import React from 'react';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { storage } from '../Firebase/config';
+import { uploadImage } from '../lib/storage';
 
-const UploadImage = async (imageUrl, setUploading, handleAddMain) => {
-    setUploading(true);
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    const storageRef = ref(storage, `images/${Date.now()}`);
-    const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        console.log(
-          `Progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%`
-        );
-      },
-      (error) => {
-        console.log(error);
-        setUploading(false);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          console.log('File available at', downloadURL);
-        
-          handleAddMain(downloadURL)
-          setUploading(false);
-          console.log(downloadURL)
-          
-        });
-      }
-    );
+// Uploads a local image to Supabase Storage, then calls onUploaded(publicUrl).
+const UploadImage = async (imageUrl, setUploading, onUploaded, folder = 'images') => {
+  setUploading(true);
+  try {
+    const publicUrl = await uploadImage(imageUrl, folder);
+    await onUploaded(publicUrl);
+  } catch (error) {
+    console.log('Image upload failed:', error);
+    alert(error?.message || 'Image upload failed');
+  } finally {
+    setUploading(false);
+  }
 };
 
 export default UploadImage;

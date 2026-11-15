@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, ScrollView, RefreshControl } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import axios from 'axios';
-import network from '../network';
+import { getOrder, getVendor, updateOrder } from '../lib/api';
 
 export default function RiderVanNav() {
   const navigation = useNavigation();
@@ -19,7 +18,7 @@ export default function RiderVanNav() {
 
   const fetchVendorDetails = async () => {
     try {
-      const response = await axios.get(network.serverurl + "/orders/" + OrderID);
+      const response = { data: await getOrder(OrderID) };
       setAcceptedOrder(response.data);
     } catch (error) {
       console.error('Failed to fetch order details:', error);
@@ -32,7 +31,7 @@ export default function RiderVanNav() {
     const fetchOrderDetail = async () => {
       if (AcceptedOrder) {
         try {
-          const res = await axios.get(network.serverurl + "/vendor/" + AcceptedOrder.VendorID);
+          const res = { data: await getVendor(AcceptedOrder.VendorID) };
           setVendor(res.data);
           console.log(res.data);
         } catch (error) {
@@ -58,13 +57,7 @@ export default function RiderVanNav() {
 
   const handleArrivedAtVendor = async () => {
     try {
-      const response = await fetch(`${network.serverurl}/orders/${OrderID}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ OrderStatus: 'AtVendor' ,RiderID: 1 }),
-        
-      },
-    );
+      const response = await updateOrder(OrderID, { OrderStatus: 'AtVendor' });
     if(response){
       console.log(response)
       navigation.navigate('OrderPickUp', { OrderID });

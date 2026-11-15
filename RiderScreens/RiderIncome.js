@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, RefreshControl,TouchableOpacity} from 'react-native';
-import axios from 'axios';
 import moment from 'moment';
-import network from '../network';
+import { getRiderIncome } from '../lib/api';
 import { themeColors } from '../theme';
 import * as Icon from "react-native-feather"; // Import Feather icons
 import { useNavigation } from '@react-navigation/native';
@@ -42,7 +41,7 @@ useEffect(() => {
   const fetchIncomeData = async () => {
    if(RiderID){
     try {
-      const response = await axios.get(network.serverurl + '/orders/RiderIncome/'+ RiderID);
+      const response = { data: await getRiderIncome(RiderID) };
       setIncomeData(response.data);
     } catch (error) {
       console.error(error);

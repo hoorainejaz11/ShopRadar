@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import network from '../network';
+import { getAllOrders, getAllCustomers, getVendors, getAllRatings } from '../lib/api';
 
 const AdminHomeScreen = () => {
   const navigation = useNavigation();
@@ -14,17 +14,12 @@ const AdminHomeScreen = () => {
   useEffect(() => {
     const fetchMetrics = async () => {
       try {
-        const [ordersRes, customersRes, vendorsRes, ratingsRes] = await Promise.all([
-          fetch(network.serverurl + '/orders/admin/allOrders'),
-          fetch(network.serverurl + '/Customer/Customers'),
-          fetch(network.serverurl + '/vendor/vendors'),
-          fetch(network.serverurl + '/ratings/allRating'),
+        const [orders, customers, vendors, ratings] = await Promise.all([
+          getAllOrders(),
+          getAllCustomers(),
+          getVendors(),
+          getAllRatings(),
         ]);
-
-        const orders = await ordersRes.json();
-        const customers = await customersRes.json();
-        const vendors = await vendorsRes.json();
-        const ratings = await ratingsRes.json();
 
         const validOrders = orders.filter(order => order.OrderStatus !== 'Cancelled');
         const totalOrders = validOrders.length;

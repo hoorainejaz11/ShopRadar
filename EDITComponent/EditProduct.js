@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import axios from 'axios';
 import { themeColors } from '../theme';
-import network from '../network';
+import { getProduct, updateProduct } from '../lib/api';
 
 const EditProduct = ({ route, navigation }) => {
   const { ProductID } = route.params; // Fetch ProductID from route params
@@ -17,7 +16,7 @@ const EditProduct = ({ route, navigation }) => {
   useEffect(() => {
     const fetchProductDetails = async () => {
       try {
-        const response = await axios.get(`${network.serverurl}/Product/Products/${ProductID}`);
+        const response = { data: await getProduct(ProductID) };
         const product = response.data;
 
         setProductName(product.ProductName || '');
@@ -47,7 +46,7 @@ const EditProduct = ({ route, navigation }) => {
         ProductDescription,
       };
 
-      await axios.put(`${network.serverurl}/Product/updateProduct/${ProductID}`, updatedProduct);
+      await updateProduct(ProductID, updatedProduct);
 
       Alert.alert('Success', 'Product updated successfully');
       navigation.goBack(); // Go back to the previous screen

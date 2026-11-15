@@ -2,9 +2,8 @@ import React, { useState ,useEffect} from 'react';
 import { View, TextInput, Button, Text, TouchableOpacity, Image, ScrollView, StyleSheet } from 'react-native';
 import RNPickerSelect from 'react-native-picker-select';
 import * as ImagePicker from 'expo-image-picker';
-import { storage } from '../Firebase/config';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import network from '../network';
+import { uploadImage as uploadToStorage } from '../lib/storage';
+import { addProduct } from '../lib/api';
 import { categories ,markets } from "../constants";
 const categoryNames = categories.map(category => category.name);
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -59,31 +58,20 @@ export default function AddProductScreen() {
   };
 
   const uploadImage = async () => {
+    if (!image) {
+      alert('Please select a product image');
+      return;
+    }
     setUploading(true);
-    const response = await fetch(image);
-    const blob = await response.blob();
-    const storageRef = ref(storage, `images/${Date.now()}`);
-    const uploadTask = uploadBytesResumable(storageRef, blob);
-  
-    uploadTask.on(
-      'state_changed',
-      (snapshot) => {
-        console.log(
-          `Progress: ${(snapshot.bytesTransferred / snapshot.totalBytes) * 100}%`
-        );
-      },
-      (error) => {
-        console.error(error);
-        setUploading(false);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          console.log('File available at', downloadURL);
-          handleAddProduct(downloadURL);
-          setUploading(false);
-        });
-      }
-    );
+    try {
+      const url = await uploadToStorage(image, 'products');
+      await handleAddProduct(url);
+    } catch (error) {
+      console.error(error);
+      alert(error?.message || 'Image upload failed');
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleAddProduct = async (url) => {
@@ -99,15 +87,13 @@ export default function AddProductScreen() {
 
 
     try {
-      const response = await fetch(network.serverurl+"/Product/", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productData),
+      const data = await addProduct({
+        ...productData,
+        Price: parseFloat(price),
+        Discount: discount ? parseFloat(discount) : 0,
       });
-      const data = await response.json();
       console.log(data);
+      alert('Product added');
       setCategory("")
       setDescription("")
       setDiscount("")
@@ -119,6 +105,7 @@ export default function AddProductScreen() {
 
     } catch (error) {
       console.error(error);
+      alert(error?.message || 'Failed to add product');
     }
   };
 

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
-import axios from 'axios';
-import network from '../network';
+import { signUp } from '../lib/api';
 
 export default function SignUp({ navigation }) {
   const [fullName, setFullName] = useState('');
@@ -15,7 +14,11 @@ export default function SignUp({ navigation }) {
 
   const handleSignUp = async () => {
     try {
-      const response = await axios.post(`${network.serverurl}/Customer/signup`, {
+      if (!email || !password || !fullName) {
+        Alert.alert('Error', 'Full name, email and password are required.');
+        return;
+      }
+      const { needsConfirmation } = await signUp({
         FullName: fullName,
         Email: email,
         Phone: phone,
@@ -25,14 +28,16 @@ export default function SignUp({ navigation }) {
         Country: country,
         Password: password,
       });
-      if (response.status === 201) {
-        Alert.alert('Success', 'Account created successfully', [
+      {
+        Alert.alert('Success', needsConfirmation
+          ? 'Account created. Check your email to confirm it, then log in.'
+          : 'Account created successfully', [
           { text: 'OK', onPress: () => navigation.replace('Login') }
         ]);
       }
     } catch (error) {
       console.error('Sign up failed:', error);
-      Alert.alert('Error', 'Sign up failed. Please try again.');
+      Alert.alert('Error', error?.message || 'Sign up failed. Please try again.');
     }
   };
 

@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import * as Icon from "react-native-feather"; // Import Feather icons
-import network from '../network';
+import { getProductsByVendor, deleteProduct } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { themeColors } from '../theme';
-import axios from 'axios';
 
 
 export default function VendorAllProducts({navigation, route}) {
@@ -22,8 +21,7 @@ export default function VendorAllProducts({navigation, route}) {
   const fetchProducts = async () => {
     const vendorId = parseInt(VendorID)
     try {
-      const response = await fetch(network.serverurl+"/Product/"+vendorId); // Replace with your actual API URL
-      const data = await response.json();
+      const data = await getProductsByVendor(vendorId);
       setProducts(data);
       setLoading(false);
     } catch (error) {
@@ -51,13 +49,9 @@ const handleDelete = (product) => {
         text: "Delete",
         onPress: async () => {
           try {
-            const response = await axios.delete(`${network.serverurl}/Product/deleteProduct/${product.ProductID}`);
-            if (response.status === 200) {
-              Alert.alert("Success", "Product deleted successfully!");
-              // Optionally refresh your product list or navigate back
-            } else {
-              Alert.alert("Error", "Failed to delete the product.");
-            }
+            await deleteProduct(product.ProductID);
+            setProducts(prev => prev.filter(p => p.ProductID !== product.ProductID));
+            Alert.alert("Success", "Product deleted successfully!");
           } catch (error) {
             console.error("Error deleting product:", error);
             Alert.alert("Error", "There was an error deleting the product.");

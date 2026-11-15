@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-import axios from 'axios';
 import { themeColors } from '../theme'; // Assuming you have themeColors for consistent styling
-import network from '../network';
+import { getVendor, updateVendor } from '../lib/api';
 
 const EditVendor = ({ route, navigation }) => {
   const { VendorID } = route.params; // Fetch the VendorID from route params
@@ -20,7 +19,7 @@ const EditVendor = ({ route, navigation }) => {
   useEffect(() => {
     const fetchVendorDetails = async () => {
       try {
-        const response = await axios.get(`${network.serverurl}/vendor/${VendorID}`);
+        const response = { data: await getVendor(VendorID) };
         const vendor = response.data;
 
         // Set vendor details into state
@@ -56,7 +55,7 @@ const EditVendor = ({ route, navigation }) => {
       };
 
       // Send updated data to backend
-      await axios.put(`${network.serverurl}/vendor/update/${VendorID}`, updatedVendor);
+      await updateVendor(VendorID, updatedVendor);
 
       Alert.alert('Success', 'Vendor updated successfully');
       navigation.goBack(); // Go back to the previous screen

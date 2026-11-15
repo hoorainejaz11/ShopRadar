@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, Button, StyleSheet, Linking, ScrollView, RefreshControl } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import axios from 'axios';
-import network from '../network';
+import { getOrder, getCustomer, updateOrder, updateRider } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NavToCust() {
@@ -18,7 +17,7 @@ export default function NavToCust() {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       try {
-        const response = await axios.get(network.serverurl + "/orders/" + OrderID);
+        const response = { data: await getOrder(OrderID) };
         console.log(response.data);
         setOrder(response.data);
       } catch (error) {
@@ -32,7 +31,7 @@ export default function NavToCust() {
     const fetchCustomerDetails = async () => {
       if (order) {
         try {
-          const customerResponse = await axios.get(network.serverurl + `/Customer/${order.CustomerID}`);
+          const customerResponse = { data: await getCustomer(order.CustomerID) };
           console.log(customerResponse.data);
           setCustomer(customerResponse.data);
         } catch (error) {
@@ -58,18 +57,14 @@ export default function NavToCust() {
   const handleMarkAsDelivered = async () => {
     try {
       console.log('OrderID',OrderID)
-      const response = await axios.put(`${network.serverurl}/orders/${OrderID}`, {
+      const response = { data: await updateOrder(OrderID, {
         OrderStatus: 'Delivered',
         isDelivered: true
-      });
+      }) };
       if(response.data){
         try{
           console.log('RiderID',order.RiderID)
-        await fetch(`${network.serverurl}/Rider/Update/${order.RiderID}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ AssignedOrder: null, IsAvailable: true }),
-        });
+        await updateRider(order.RiderID, { AssignedOrder: null, IsAvailable: true });
         navigation.navigate('RiderHome');
         }catch(error){
           console.log('Rider error',error)

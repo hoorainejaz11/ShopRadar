@@ -4,8 +4,7 @@ import * as Icon from 'react-native-feather';
 import { themeColors } from '../theme';
 import Categories from '../CustomerComponent/categories';
 import FeaturedRow from '../CustomerComponent/featuredRow';
-import axios from 'axios';
-import network from "../network";
+import { getCustomerActiveOrders, getVendors } from '../lib/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PendingOrders from '../CustomerComponent/PendingOrderIcon';
 import { useNavigation } from '@react-navigation/native';
@@ -53,7 +52,7 @@ export default function HomeScreen() {
     try {
     
         
-      const response = await axios.get(`${network.serverurl}/orders/customer/${customerId.CustomerID}`);
+      const response = { data: await getCustomerActiveOrders(customerId.CustomerID) };
       if(response.data){
         setPendingOrdersCount(response.data.length);
         console.log(response.data)
@@ -78,7 +77,7 @@ export default function HomeScreen() {
   // Fetch vendors
   const fetchVendors = async () => {
     try {
-      const response = await axios.get(network.serverurl + "/vendor/vendors");
+      const response = { data: await getVendors() };
       setVendors(response.data);
     } catch (error) {
       console.error(error);

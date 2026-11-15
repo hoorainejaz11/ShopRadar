@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import axios from 'axios';
-import network from '../network';
+import { getOrderDetails, getProduct, updateOrder } from '../lib/api';
 
 export default function OrderPickup() {
   const navigation = useNavigation();
@@ -17,14 +16,14 @@ export default function OrderPickup() {
 
   const fetchOrderDetails = async () => {
     try {
-      const response = await axios.get(`${network.serverurl}/orderdetails/${OrderID}/details`);
+      const response = { data: await getOrderDetails(OrderID) };
       const orderDetailsData = response.data;
       
       const enrichedOrderDetails = await Promise.all(orderDetailsData.map(async (detail) => {
         const products = JSON.parse(detail.ProductDetails).products;
         const enrichedProducts = await Promise.all(products.map(async (product) => {
           try {
-            const productResponse = await axios.get(`${network.serverurl}/Product/Products/${product.ProductID}`);
+            const productResponse = { data: await getProduct(product.ProductID) };
             return { ...product, ProductName: productResponse.data.ProductName };
           } catch (error) {
             console.error(`Failed to fetch product name for ProductID: ${product.ProductID}`, error);
@@ -48,7 +47,7 @@ export default function OrderPickup() {
   const handlePickup = async () => {
     
     try {
-      await axios.put(`${network.serverurl}/orders/${OrderID}`, {
+      await updateOrder(OrderID, {
         OrderStatus: 'PickedUp'
       });
       navigation.navigate('RiderCustNav', { OrderID });

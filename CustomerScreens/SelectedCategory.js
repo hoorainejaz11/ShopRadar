@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, Image, ScrollView, StyleSheet, ActivityIndicator,TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
-import axios from 'axios';
 import { useRoute } from '@react-navigation/native';
 import { themeColors } from '../theme'; // Adjust this if necessary
-import network from '../network';
+import { getVendors } from '../lib/api';
 import Categories from '../CustomerComponent/categories';
 import * as Icon from "react-native-feather"; // Import Feather icons
 const SelectedCategoryScreen = ({navigation}) => {
@@ -17,7 +16,7 @@ const SelectedCategoryScreen = ({navigation}) => {
     console.log(route.params)
     const fetchVendors = async () => {
       try {
-        const response = await axios.get(network.serverurl + "/vendor/vendors");
+        const response = { data: await getVendors() };
         console.log(response.data)
         const filteredVendors = response.data.filter(vendor => vendor.ShopCategory === item);
         console.log(filteredVendors)

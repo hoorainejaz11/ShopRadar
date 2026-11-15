@@ -1,8 +1,8 @@
 import React, { useState,useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import network from '../network';
+import { supabase } from '../lib/supabase';
+import { signIn, refreshStoredUser } from '../lib/api';
 import { useNavigation } from '@react-navigation/native';
 
 export default function Login({ navigation }) {
@@ -13,11 +13,17 @@ export default function Login({ navigation }) {
   const [data,setdata] = useState(null)
 
   const handleLoginCheck =async () => {
-    const userData = await AsyncStorage.getItem('user');
-    setdata(JSON.parse(userData));
-   console.log(JSON.parse(userData))
-    if(userData){
-      navigation.replace('DrawerNav')
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      await AsyncStorage.removeItem('user');
+      return;
+    }
+    try {
+      const customer = await refreshStoredUser();
+      setdata(customer);
+      if (customer) navigation.replace('DrawerNav');
+    } catch (e) {
+      console.log('Session restore failed:', e);
     }
   }
 
@@ -29,20 +35,15 @@ useEffect(() => {
   const handleLogin = async () => {
 
     try {
-      const response = await axios.post(`${network.serverurl}/Customer/login`, {
-        Email: email,
-        Password: password,
-      });
-      if (response.status === 200) {
-        await AsyncStorage.setItem('user', JSON.stringify(response.data));
-        console.log(response.data)
+      const customer = await signIn(email, password);
+      if (customer) {
         Alert.alert('Success', 'Logged in successfully', [
           { text: 'OK', onPress: () => navigation.replace('DrawerNav') }
         ]);
       }
     } catch (error) {
       console.log('Login failed:', error);
-      Alert.alert('Error', 'Login failed. Please check your credentials and try again.');
+      Alert.alert('Error', error?.message || 'Login failed. Please check your credentials and try again.');
     }
   };
 

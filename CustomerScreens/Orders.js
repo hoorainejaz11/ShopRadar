@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import network from '../network';
+import { getCustomerOrderHistory, addRating } from '../lib/api';
 import * as Icon from "react-native-feather"; 
 import { themeColors } from '../theme';
 import StarRating from 'react-native-star-rating-widget';
@@ -39,7 +38,7 @@ const navigation = useNavigation();
 
   const fetchOrders = async (customerID) => {
     try {
-      const response = await axios.get(`${network.serverurl}/orders/customer-orders/${customerID}`);
+      const response = { data: await getCustomerOrderHistory(customerID) };
       setOrders(response.data);
     } catch (error) {
       console.log('Error fetching orders', error);
@@ -58,7 +57,7 @@ const navigation = useNavigation();
   const submitRating = async (orderID, rating,VendorID) => {
     console.log(VendorID)
     try {
-      await axios.post(`${network.serverurl}/ratings/`, {
+      await addRating({
         CustomerID: customerId,
         VendorID: VendorID,
         OrderID: orderID,

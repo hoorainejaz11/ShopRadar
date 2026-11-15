@@ -4,11 +4,10 @@ import MapView, { Marker } from "react-native-maps";
 import { useNavigation , useRoute} from "@react-navigation/native";
 import { themeColors } from "../theme";
 import * as Icon from "react-native-feather";
-import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { EmptyCart } from "../slices/CartSlices";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import network from "../network";
+import { getOrder, updateOrder, getRider } from "../lib/api";
 import call from 'react-native-phone-call';
 import RNPickerSelect from 'react-native-picker-select';
 
@@ -37,7 +36,7 @@ export default function DeliveryScreen({ route }) {
 
   const fetchOrder = async (orderID) => {
     try {
-       const response = await axios.get(`${network.serverurl}/orders/${orderID}`);
+       const response = { data: await getOrder(orderID) };
        
    
       const orderData = response.data;
@@ -125,10 +124,10 @@ export default function DeliveryScreen({ route }) {
     let CancelOrderID = OrderID?OrderID:lastOrderID
     console.log('this is cancellation Order iD',CancelOrderID)
     try {
-      const response = await axios.put(`${network.serverurl}/orders/${CancelOrderID}`, {
+      const response = { data: await updateOrder(CancelOrderID, {
         OrderStatus: 'Cancelled',
         isDelivered: false,
-      });
+      }) };
       if(response.data){
         console.log('response data of markder deliver ', response.data)
         navigation.navigate('HomeScreen');
@@ -143,7 +142,7 @@ export default function DeliveryScreen({ route }) {
 
   const fetchRiderDetails = async (RiderID) => {
     try {
-      const response = await axios.get(`${network.serverurl}/Rider/${RiderID}`);
+      const response = { data: await getRider(RiderID) };
       const orderData = response.data;
       console.log('Rider  Details:', orderData);
       setRider(orderData)
@@ -193,7 +192,7 @@ export default function DeliveryScreen({ route }) {
 
   const hanldePickedUp =async () => {
     try {
-      await axios.put(`${network.serverurl}/orders/${OrderID}`, {
+      await updateOrder(OrderID, {
         OrderStatus: 'Delivered',
         isDelivered: true
       });

@@ -3,16 +3,14 @@ import {View,Text,StyleSheet,TextInput,Button,TouchableOpacity,Image} from 'reac
 import { useNavigation } from '@react-navigation/native';
 import RNPickerSelect from 'react-native-picker-select';
 import * as ImagePicker from 'expo-image-picker';
-import network from '../network';
-import { storage } from '../Firebase/config';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { registerVendor } from '../lib/api';
 import SelectImage from '../components/selectImage';
 import UploadImage from '../components/uploadimage';
 import { categories ,markets } from "../constants";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function VendorRegister ({ route, navigation }){
-  const { CustomerID } = route.params;
+  const { CustomerID } = route.params || {};
     const [image,setimage]= useState(null)
     const [uploading, setUploading] = useState(false);
     const [category,setCategory] = useState("")
@@ -42,63 +40,17 @@ export default function VendorRegister ({ route, navigation }){
         Market:Market,
         Email:Email,
         Latitude: Latitude,
-        Longitude,Longitude,
+        Longitude: Longitude,
         ShopCategory: category,
         Image:downloadURL
       };
   
       try {
-        const response = await fetch(network.serverurl+"/vendor/", {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(productData),
-        });
-        const data = await response.json();
-        console.log(data);
-        if(data){
-          try {
-            const response = await fetch(`${network.serverurl}/Customer/${CustomerID}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ VendorID: data.VendorID }),
-            });
-          } catch (error) {
-            console.error(error);
-          }
-
-          try {
-            // Step 1: Retrieve the existing user object
-            const user = await AsyncStorage.getItem('user');
-            let userData = JSON.parse(user);
-
-            // Step 2: Update the user object with the new VendorID
-            if (userData) {
-              userData.VendorID = data.VendorID;
-
-              // Step 3: Save the updated user object back to AsyncStorage
-              await AsyncStorage.setItem('user', JSON.stringify(userData));
-
-              console.log('User updated successfully:', userData);
-            } else {
-              console.log('No user data found in AsyncStorage');
-            }
-          } catch (error) {
-            console.error('Error updating user data:', error);
-          }
-
-        }
-        
-        
-
-
+        await registerVendor(productData);
         navigation.navigate('HomeScreen')
-  
-       
-  
       } catch (error) {
         console.error(error);
+        alert(error?.message || 'Vendor registration failed');
       }
     };
    
@@ -106,7 +58,7 @@ export default function VendorRegister ({ route, navigation }){
     const handleImage = () => {
       if (image) {
        
-        UploadImage(image, setUploading, handleAddMain);
+        UploadImage(image, setUploading, handleAddMain, 'vendors');
       } else {
         console.log("plz select image first")
       }
