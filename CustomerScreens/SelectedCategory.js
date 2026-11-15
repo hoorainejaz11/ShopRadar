@@ -55,15 +55,15 @@ const SelectedCategoryScreen = ({navigation}) => {
             <View  style={styles.vendorCard}>
             <Image style={styles.vendorImage} source={{ uri: vendor.Image }} />
             <View style={styles.vendorDetails}>
-              <Text style={styles.vendorName}>{vendor.BusinessName}</Text>
+              <Text style={styles.vendorName} numberOfLines={2}>{vendor.BusinessName}</Text>
               <View style={styles.ratingContainer}>
                 <Image 
                   style={styles.ratingImage} 
                   source={require("../assets/star-icon-19125.png")} 
                 />
                 <Text style={styles.ratingText}>
-                  <Text style={styles.ratingValue}>{vendor.AverageRating}</Text>
-                  <Text style={styles.ratingCount}> ({vendor.RatingCount}) Reviews</Text>
+                  <Text style={styles.ratingValue}>{vendor.AverageRating ?? '-'}</Text>
+                  <Text style={styles.ratingCount}> ({vendor.RatingCount ?? 0}) Reviews</Text>
                 </Text>
               </View>
               <Text style={styles.vendorMarket}>{vendor.Market}</Text>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, Image,Linking ,Alert} from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import OSMap from "../components/OSMap";
 import { useNavigation , useRoute} from "@react-navigation/native";
 import { themeColors } from "../theme";
 import * as Icon from "react-native-feather";
@@ -291,14 +291,14 @@ export default function DeliveryScreen({ route }) {
     </TouchableOpacity>
   <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 5, }}>
   
-    <View>
+    <View style={{ flex: 1, paddingRight: 12 }}>
       <Text style={{ fontSize: 18, color: '#4B5563', fontWeight: '600', }}>Pickup Location</Text>
       <Text style={{ fontSize: 30, color: '#4B5563', fontWeight: '800', }}>{item?(item.Vendor.BusinessName):shop.BusinessName}</Text>
       <Text style={{ marginTop: 8, color: '#4B5563', fontWeight: '600', }}>{item?(item.Vendor.CompanyAddress):shop.CompanyAddress}</Text>
       <Text style={{ marginTop: 4, color: '#4B5563', fontWeight: '600', }}>{item?(item.Vendor.Market):shop.Market}</Text>
       <Text style={{ marginTop: 4, color: '#4B5563', fontWeight: '600', }}>{item?(item.Vendor.Contact):shop.Contact}</Text>
     </View>
-    <Image style={{ width: 90, height: 90 }} source={item? { uri: item.Vendor.Image } :{ uri: shop.Image }} />
+    <Image style={{ width: 90, height: 90, borderRadius: 12, marginTop: 24 }} resizeMode="cover" source={item? { uri: item.Vendor.Image } :{ uri: shop.Image }} />
   </View>
 
   <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginVertical: 20, paddingHorizontal: 20 }}>
@@ -329,28 +329,14 @@ export default function DeliveryScreen({ route }) {
     }
   return (
     <View style={{ flex: 1 }}>
-    <MapView
-      initialRegion={{
-        latitude: Latitude,
-        longitude: Longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01
-      }}
+    <OSMap
       style={{ flex: 1 }}
-      mapType='standard'
-    >
-      <Marker
-        coordinate={{
-          latitude: Latitude,
-          longitude: Longitude,
-        }}
-        title={OrderID?item.BusinessName:shop.BusinessName}
-        
-        pinColor={themeColors.bgColor(1)}
-      />
-    </MapView>
+      latitude={Latitude}
+      longitude={Longitude}
+      markers={[{ latitude: Latitude, longitude: Longitude, title: OrderID ? item?.BusinessName : shop?.BusinessName }]}
+    />
     {
-       IsPickup?<SelfPickUP />:<FetchRiderInfo />
+       IsPickup?SelfPickUP():FetchRiderInfo()
     }
        
     </View>

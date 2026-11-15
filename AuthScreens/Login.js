@@ -1,8 +1,7 @@
 import React, { useState,useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../lib/supabase';
-import { signIn, refreshStoredUser } from '../lib/api';
+import { signIn } from '../lib/api';
 import { useNavigation } from '@react-navigation/native';
 
 export default function Login({ navigation }) {
@@ -10,26 +9,7 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState('');
 
   
-  const [data,setdata] = useState(null)
-
-  const handleLoginCheck =async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      await AsyncStorage.removeItem('user');
-      return;
-    }
-    try {
-      const customer = await refreshStoredUser();
-      setdata(customer);
-      if (customer) navigation.replace('DrawerNav');
-    } catch (e) {
-      console.log('Session restore failed:', e);
-    }
-  }
-
-useEffect(() => {
-    handleLoginCheck();
-  }, []);
+  // Session restore + redirect to Home now happens once at startup in App.js (no Login flash).
 
   //const navigation = useNavigation()
   const handleLogin = async () => {

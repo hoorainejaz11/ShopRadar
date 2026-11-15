@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet } from "rea
 import { categories } from "../constants";
 import { useNavigation } from "@react-navigation/native";
 
-export default function Categories() {
+function Categories() {
   const navigation = useNavigation()
   const [activeCategory, setActiveCategory] = useState(null);
 const handleCategories = (props) => {
@@ -100,3 +100,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
+export default React.memo(Categories);

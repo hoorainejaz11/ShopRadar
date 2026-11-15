@@ -1,130 +1,84 @@
-import React, { useEffect, useState } from 'react';
-import { SafeAreaView, StatusBar, View, TextInput, ScrollView, Text, StyleSheet, TouchableOpacity, RefreshControl, Modal, Button } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { SafeAreaView, StatusBar, View, ScrollView, Text, StyleSheet, TouchableOpacity, RefreshControl, Modal, ActivityIndicator } from 'react-native';
 import * as Icon from 'react-native-feather';
+import { useSelector } from 'react-redux';
 import { themeColors } from '../theme';
 import Categories from '../CustomerComponent/categories';
 import FeaturedRow from '../CustomerComponent/featuredRow';
-import { getCustomerActiveOrders, getVendors } from '../lib/api';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCustomerActiveOrders, getVendors, TTL } from '../lib/api';
+import { useQuery } from '../lib/useQuery';
+import { selectUser } from '../slices/AuthSlice';
 import PendingOrders from '../CustomerComponent/PendingOrderIcon';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import RNPickerSelect from 'react-native-picker-select';
 import { categories,markets } from "../constants";
+
+const EMPTY = [];
+const categoryNames = categories.map(category => category.name);
+const MarketNames = markets.map(MARKET => MARKET.name);
+
 export default function HomeScreen() {
-  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
-  const [customerId, setCustomerId] = useState(null);
-  const [refreshing, setRefreshing] = useState(false);
   const [isModalVisible, setModalVisible] = useState(false);
+  // Draft values edited in the modal vs. the filters actually applied to the list.
   const [selectedMarket, setSelectedMarket] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [applied, setApplied] = useState({ market: '', category: '' });
   const navigation = useNavigation();
-  const categoryNames = categories.map(category => category.name);
-  const MarketNames = markets.map(MARKET => MARKET.name);
+  const user = useSelector(selectUser);
+  const customerId = user?.CustomerID;
 
-  useEffect(() => {
-    fetchCustomerID();
-  }, []);
+  // Vendors: cached (also persisted across restarts); shown instantly, refreshed in the background when stale.
+  const vendorsQ = useQuery('vendors', (force) => getVendors({ force }), { ttl: TTL.vendors });
+  // Active orders are live data: short TTL so the badge stays current without a request per render.
+  const ordersQ = useQuery(
+    customerId ? `orders:active:${customerId}` : null,
+    (force) => getCustomerActiveOrders(customerId, { force }),
+    { ttl: 15000, enabled: !!customerId }
+  );
+  const vendors = vendorsQ.data || EMPTY;
+  const pendingOrdersCount = ordersQ.data?.length || 0;
 
-  useEffect(() => {
-    
-    if (customerId) {
-      
-      fetchPendingOrders();
-    }
-  }, [customerId]);
+  // Re-validate whenever Home regains focus (e.g. after placing an order) instead of only on first mount.
+  const { revalidate: revalidateVendors } = vendorsQ;
+  const { revalidate: revalidateOrders } = ordersQ;
+  useFocusEffect(
+    useCallback(() => {
+      revalidateVendors();
+      revalidateOrders();
+    }, [revalidateVendors, revalidateOrders])
+  );
 
-  // Fetch customer ID
-  const fetchCustomerID = async () => {
-    try {
-      const userData = await AsyncStorage.getItem('user');
+  const refreshing = vendorsQ.refreshing || ordersQ.refreshing;
+  const onRefresh = useCallback(() => {
+    vendorsQ.refresh();
+    if (customerId) ordersQ.refresh();
+  }, [vendorsQ.refresh, ordersQ.refresh, customerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-      if (userData) {
-        setCustomerId(JSON.parse(userData));
-        console.log('user data',JSON.parse(userData))
-      }
-    } catch (error) {
-      console.error('Error fetching customer ID', error);
-    }
-  };
-
-  // Fetch pending orders
-  const fetchPendingOrders = async () => {
-    try {
-    
-        
-      const response = { data: await getCustomerActiveOrders(customerId.CustomerID) };
-      if(response.data){
-        setPendingOrdersCount(response.data.length);
-        console.log(response.data)
-      }else{
-        setPendingOrdersCount(0)
-        
-      }
-    } catch (error) {
-    
-        console.log('No orders Fetched');
-        setPendingOrdersCount(0)
-      
-    }
-  };
-
-  const [vendors, setVendors] = useState([]);
-
-  useEffect(() => {
-    fetchVendors();
-  }, []);
-
-  // Fetch vendors
-  const fetchVendors = async () => {
-    try {
-      const response = { data: await getVendors() };
-      setVendors(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    try {
-      if (customerId) {
-        await fetchPendingOrders();
-      }
-      await fetchVendors(); // Fetch vendors again on refresh
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  // Apply filters
   const applyFilters = () => {
-    let filteredVendors = vendors;
-
-    if (selectedMarket) {
-      filteredVendors = filteredVendors.filter(vendor => vendor.Market === selectedMarket);
-    }
-
-    if (selectedCategory) {
-      filteredVendors = filteredVendors.filter(vendor => vendor.ShopCategory === selectedCategory);
-    }
-
-    setVendors(filteredVendors);
+    setApplied({ market: selectedMarket, category: selectedCategory });
     setModalVisible(false);
   };
 
-  // Clear filters
   const clearFilters = () => {
     setSelectedMarket('');
     setSelectedCategory('');
-    fetchVendors();
+    setApplied({ market: '', category: '' });
     setModalVisible(false);
   };
 
-  // Group vendors by ShopCategory
-  const groupedVendors = vendors.reduce((acc, vendor) => {
-    (acc[vendor.ShopCategory] = acc[vendor.ShopCategory] || []).push(vendor);
+  // Derived (never overwrites the source list, so filters can be changed/cleared repeatedly).
+  const groupedVendors = useMemo(() => {
+    const acc = {};
+    vendors.forEach((vendor) => {
+      if (applied.market && vendor.Market !== applied.market) return;
+      if (applied.category && vendor.ShopCategory !== applied.category) return;
+      (acc[vendor.ShopCategory] = acc[vendor.ShopCategory] || []).push(vendor);
+    });
     return acc;
-  }, {});
+  }, [vendors, applied]);
+
+  const initialLoading = vendorsQ.loading && !vendorsQ.data;
+  const failedWithoutData = !!vendorsQ.error && !vendorsQ.data;
 
   return (
     <SafeAreaView style={{ backgroundColor: 'white' ,flex: 1 }}>
@@ -141,9 +95,9 @@ export default function HomeScreen() {
             <View style={stylehome.style2}>
               <Icon.MapPin height="20" width="20" stroke="gray" />
               <Text style={{ color: '#718096' }}>
-                {selectedMarket && selectedMarket.length > 8 
-                  ? `${selectedMarket.substring(0, 8)}...` 
-               : selectedMarket || 'All Lahore'}
+                {applied.market && applied.market.length > 8 
+                  ? `${applied.market.substring(0, 8)}...` 
+               : applied.market || 'All Lahore'}
                </Text>
             </View>
           </View>
@@ -166,10 +120,19 @@ export default function HomeScreen() {
         }
       >
         <Categories />
+        {initialLoading && <ActivityIndicator style={{ marginTop: 40 }} size="large" color={themeColors.bgColor(1)} />}
+        {failedWithoutData && (
+          <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 24 }}>
+            <Text style={{ color: '#718096', textAlign: 'center' }}>Couldn't load shops. Check your connection.</Text>
+            <TouchableOpacity onPress={vendorsQ.refetch} style={{ marginTop: 12 }}>
+              <Text style={{ color: themeColors.text, fontWeight: '600' }}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={{ marginTop: 20, marginBottom: 20 }}>
-          {Object.keys(groupedVendors).map((category, index) => (
+          {Object.keys(groupedVendors).map((category) => (
             <FeaturedRow
-              key={index}
+              key={category}
               title={category}
               restaurants={groupedVendors[category]}
               description={`Discover the best ${category} places`}

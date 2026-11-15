@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getCustomerOrderHistory, addRating } from '../lib/api';
@@ -14,7 +14,7 @@ const OrderScreen = () => {
   const [customerId, setCustomerId] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [rating, setRating] = useState(0);
-  const sortedOrders = [...orders].sort((a, b) => b.OrderID - a.OrderID);
+  const sortedOrders = useMemo(() => [...orders].sort((a, b) => b.OrderID - a.OrderID), [orders]);
 const navigation = useNavigation();
   useEffect(() => {
     const fetchCustomerID = async () => {
@@ -109,6 +109,9 @@ const navigation = useNavigation();
   data={sortedOrders}
   renderItem={renderOrderItem}
   keyExtractor={item => item.OrderID.toString()}
+  initialNumToRender={8}
+  windowSize={7}
+  removeClippedSubviews
   contentContainerStyle={[styles.flatListContent]}
   showsVerticalScrollIndicator={false}
   refreshControl={

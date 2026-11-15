@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Linking, ScrollView, RefreshControl } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import OSMap from '../components/OSMap';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { getOrder, getVendor, updateOrder } from '../lib/api';
 
@@ -83,21 +83,12 @@ export default function RiderVanNav() {
         <>
           <Text style={styles.vendorName}>{vendor.BusinessName}</Text>
           <Text style={styles.vendorContact}>Contact: {vendor.Contact}</Text>
-          <MapView
+          <OSMap
             style={styles.map}
-            initialRegion={{
-              latitude: vendor.Latitude,
-              longitude: vendor.Longitude,
-              latitudeDelta: 0.01,
-              longitudeDelta: 0.01,
-            }}
-          >
-            <Marker
-              coordinate={{ latitude: vendor.Latitude, longitude: vendor.Longitude }}
-              title={vendor.BusinessName}
-              description={vendor.CompanyAddress}
-            />
-          </MapView>
+            latitude={vendor.Latitude}
+            longitude={vendor.Longitude}
+            markers={[{ latitude: vendor.Latitude, longitude: vendor.Longitude, title: vendor.BusinessName }]}
+          />
           <TouchableOpacity style={styles.button} onPress={handleNavigate}>
             <Text style={styles.buttonText}>Navigate to Vendor</Text>
           </TouchableOpacity>
